@@ -1,0 +1,1478 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Una fuente, todos los harnesses</title>
+    <meta
+      name="description"
+      content="Cómo se comporta agentic-dev-boilerplate en Claude Code, OpenCode, Codex y Pi: un solo juego de instrucciones (un núcleo que siempre carga y secciones a pedido), skills por nombre y modo, un hook con la línea de identidad, MCP con un formato por host y las credenciales de cada arranque."
+    />
+    <style>
+      /* ============================================================
+     Página autocontenida: cero requests externos, ni siquiera
+     fuentes. Sobrevive como archivo suelto.
+     Tokens: "Planos" — ver packages/decks/README.md (fuente única).
+     ============================================================ */
+      :root {
+        --paper: #e8ecf1;
+        --paper-2: #dee5ed;
+        --surface: #f5f8fb;
+        --surface-2: #ffffff;
+        --ink: #172236;
+        --ink-soft: #4a5873;
+        --ink-faint: #5e6e88;
+        --line: rgba(23, 34, 54, 0.14);
+        --line-soft: rgba(23, 34, 54, 0.08);
+        --blue: #1e56a8;
+        --blue-2: #2f72ce;
+        --blue-wash: rgba(30, 86, 168, 0.08);
+        --blue-solid: #1e56a8;
+        --signal: #c2410c;
+        --signal-2: #ea580c;
+        --signal-wash: rgba(194, 65, 12, 0.09);
+        --signal-solid: #9a3412;
+        --agent: #6d28d9;
+        --agent-wash: rgba(109, 40, 217, 0.08);
+        --agent-solid: #6d28d9;
+        --good: #15803d;
+        --warn: #b45309;
+        --font-display:
+          'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+        --font-body:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', system-ui, sans-serif;
+        --font-mono:
+          ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #0b1220;
+          --paper-2: #0e1626;
+          --surface: #121b2e;
+          --surface-2: #16213a;
+          --ink: #e4e9f2;
+          --ink-soft: #9fb0c9;
+          --ink-faint: #7e8caa;
+          --line: rgba(160, 180, 210, 0.16);
+          --line-soft: rgba(160, 180, 210, 0.09);
+          --blue: #6fa8ff;
+          --blue-2: #8cbbff;
+          --blue-wash: rgba(111, 168, 255, 0.11);
+          --signal: #fb923c;
+          --signal-2: #fdba74;
+          --signal-wash: rgba(251, 146, 60, 0.12);
+          --agent: #c4b5fd;
+          --agent-wash: rgba(196, 181, 253, 0.12);
+          --good: #4ade80;
+          --warn: #fbbf24;
+        }
+      }
+      :root[data-theme='light'] {
+        --paper: #e8ecf1;
+        --paper-2: #dee5ed;
+        --surface: #f5f8fb;
+        --surface-2: #ffffff;
+        --ink: #172236;
+        --ink-soft: #4a5873;
+        --ink-faint: #5e6e88;
+        --line: rgba(23, 34, 54, 0.14);
+        --line-soft: rgba(23, 34, 54, 0.08);
+        --blue: #1e56a8;
+        --blue-2: #2f72ce;
+        --blue-wash: rgba(30, 86, 168, 0.08);
+        --signal: #c2410c;
+        --signal-2: #ea580c;
+        --signal-wash: rgba(194, 65, 12, 0.09);
+        --agent: #6d28d9;
+        --agent-wash: rgba(109, 40, 217, 0.08);
+        --good: #15803d;
+        --warn: #b45309;
+      }
+      :root[data-theme='dark'] {
+        --paper: #0b1220;
+        --paper-2: #0e1626;
+        --surface: #121b2e;
+        --surface-2: #16213a;
+        --ink: #e4e9f2;
+        --ink-soft: #9fb0c9;
+        --ink-faint: #7e8caa;
+        --line: rgba(160, 180, 210, 0.16);
+        --line-soft: rgba(160, 180, 210, 0.09);
+        --blue: #6fa8ff;
+        --blue-2: #8cbbff;
+        --blue-wash: rgba(111, 168, 255, 0.11);
+        --signal: #fb923c;
+        --signal-2: #fdba74;
+        --signal-wash: rgba(251, 146, 60, 0.12);
+        --agent: #c4b5fd;
+        --agent-wash: rgba(196, 181, 253, 0.12);
+        --good: #4ade80;
+        --warn: #fbbf24;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--font-body);
+        line-height: 1.62;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 26px 110px;
+      }
+
+      /* topbar */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 11px clamp(20px, 5vw, 56px);
+        background: color-mix(in srgb, var(--paper) 82%, transparent);
+        backdrop-filter: blur(12px) saturate(1.4);
+        border-bottom: 1px solid var(--line-soft);
+      }
+      .topbar .brand {
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        color: var(--ink-soft);
+        display: flex;
+        align-items: center;
+        gap: 0.6em;
+        text-decoration: none;
+      }
+      .topbar .brand b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .topbar .mark {
+        width: 16px;
+        height: 16px;
+        border: 1.5px solid var(--blue);
+        border-radius: 3px;
+        position: relative;
+        flex: none;
+      }
+      .topbar .mark::after {
+        content: '';
+        position: absolute;
+        inset: 3px;
+        border: 1.5px solid var(--agent);
+        border-radius: 1px;
+      }
+      .topnav {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+      }
+      .topnav a {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.03em;
+        color: var(--ink-faint);
+        text-decoration: none;
+        padding: 5px 9px;
+        border-radius: 6px;
+      }
+      .topnav a:hover {
+        color: var(--ink);
+        background: var(--blue-wash);
+      }
+      @media (max-width: 900px) {
+        .topnav {
+          display: none;
+        }
+      }
+      .themebtn {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--ink-soft);
+        padding: 6px 11px;
+        border-radius: 7px;
+        display: flex;
+        gap: 0.5em;
+        align-items: center;
+      }
+      .themebtn:hover {
+        border-color: var(--blue);
+        color: var(--ink);
+      }
+      .themebtn:focus-visible {
+        outline: 2px solid var(--blue);
+        outline-offset: 2px;
+      }
+
+      /* hero */
+      header.hero {
+        padding: 76px 0 40px;
+        border-bottom: 1px solid var(--line);
+      }
+      .kick {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--blue);
+        margin: 0 0 16px;
+        font-weight: 600;
+      }
+      h1 {
+        font-family: var(--font-display);
+        font-size: clamp(32px, 5vw, 54px);
+        line-height: 1.08;
+        margin: 0 0 20px;
+        font-weight: 600;
+      }
+      h1 em {
+        font-style: italic;
+        color: var(--blue);
+      }
+      .lede {
+        font-size: clamp(16px, 1.6vw, 20px);
+        color: var(--ink-soft);
+        max-width: 70ch;
+        margin: 0;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 26px;
+      }
+      .tag {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        padding: 4px 10px;
+        border-radius: 5px;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        color: var(--ink-faint);
+      }
+
+      section {
+        margin-top: 58px;
+      }
+      h2 {
+        font-family: var(--font-display);
+        font-size: clamp(23px, 3vw, 33px);
+        line-height: 1.15;
+        margin: 0 0 10px;
+        font-weight: 600;
+      }
+      h2 .num {
+        font-family: var(--font-mono);
+        font-size: 0.5em;
+        color: var(--ink-faint);
+        margin-right: 12px;
+        font-weight: 600;
+      }
+      .sub {
+        color: var(--ink-soft);
+        max-width: 76ch;
+        margin: 0 0 24px;
+      }
+      .sub strong,
+      section p strong {
+        color: var(--ink);
+      }
+
+      table.plain {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+        font-size: 14.5px;
+      }
+      table.plain th {
+        text-align: left;
+        padding: 13px 17px;
+        background: var(--surface);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        border-bottom: 1px solid var(--line);
+      }
+      table.plain td {
+        padding: 14px 17px;
+        border-bottom: 1px solid var(--line-soft);
+        color: var(--ink-soft);
+        vertical-align: top;
+      }
+      table.plain tr:last-child td {
+        border-bottom: none;
+      }
+      table.plain td:first-child {
+        color: var(--ink);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .tbl-scroll {
+        overflow-x: auto;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.87em;
+        background: var(--blue-wash);
+        color: var(--blue);
+        padding: 1.5px 6px;
+        border-radius: 4px;
+      }
+      .yes {
+        color: var(--good);
+        font-weight: 700;
+      }
+      .not {
+        color: var(--signal);
+        font-weight: 700;
+      }
+
+      .callout {
+        display: flex;
+        gap: 13px;
+        margin-top: 18px;
+        padding: 15px 18px;
+        border-radius: 9px;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--blue);
+        color: var(--ink-soft);
+        font-size: 15px;
+      }
+      .callout.warn {
+        border-left-color: var(--signal);
+      }
+      .callout.agt {
+        border-left-color: var(--agent);
+      }
+      .callout .ic {
+        flex-shrink: 0;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--blue);
+        padding-top: 3px;
+      }
+      .callout.warn .ic {
+        color: var(--signal);
+      }
+      .callout.agt .ic {
+        color: var(--agent);
+      }
+      .callout strong {
+        color: var(--ink);
+      }
+
+      pre.block {
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        line-height: 1.7;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px 19px;
+        overflow-x: auto;
+        color: var(--ink-soft);
+        margin: 18px 0 0;
+      }
+      pre.block .c {
+        color: var(--ink-faint);
+      }
+      pre.block .k {
+        color: var(--blue);
+        font-weight: 600;
+      }
+      pre.block .neg {
+        color: var(--good);
+        font-weight: 600;
+      }
+      pre.block .bad {
+        color: var(--signal);
+        font-weight: 600;
+      }
+
+      /* flow diagram */
+      .flow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: stretch;
+        margin-top: 20px;
+      }
+      .flow .step {
+        flex: 1 1 180px;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-top: 2px solid var(--blue);
+        border-radius: 10px;
+        padding: 14px 16px;
+        position: relative;
+      }
+      .flow .step.agt {
+        border-top-color: var(--agent);
+      }
+      .flow .step.sig {
+        border-top-color: var(--signal);
+      }
+      .flow .step .n {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        display: block;
+        margin-bottom: 6px;
+      }
+      .flow .step h4 {
+        margin: 0 0 6px;
+        font-size: 15px;
+        font-family: var(--font-display);
+        font-weight: 600;
+      }
+      .flow .step p {
+        margin: 0;
+        font-size: 13.5px;
+        color: var(--ink-soft);
+      }
+      .flow .arrow {
+        align-self: center;
+        color: var(--ink-faint);
+        font-family: var(--font-mono);
+        font-size: 18px;
+        flex: 0 0 auto;
+        padding: 0 2px;
+      }
+      @media (max-width: 760px) {
+        .flow .arrow {
+          display: none;
+        }
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+      }
+      .card {
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-top: 2px solid var(--blue);
+        border-radius: 10px;
+        padding: 19px 21px;
+      }
+      .card.sig {
+        border-top-color: var(--signal);
+      }
+      .card.agt {
+        border-top-color: var(--agent);
+      }
+      .card h4 {
+        margin: 0 0 8px;
+        font-size: 15.5px;
+        font-family: var(--font-display);
+        font-weight: 600;
+      }
+      .card p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--ink-soft);
+      }
+      .card p + p {
+        margin-top: 8px;
+      }
+      .card .n {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        display: block;
+        margin-bottom: 8px;
+      }
+      .card strong {
+        color: var(--ink);
+      }
+
+      /* numbered steps (migración) */
+      ol.steps {
+        list-style: none;
+        counter-reset: paso;
+        margin: 20px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 12px;
+      }
+      ol.steps li {
+        counter-increment: paso;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 15px 18px 15px 58px;
+        position: relative;
+        color: var(--ink-soft);
+        font-size: 14.5px;
+      }
+      ol.steps li::before {
+        content: counter(paso);
+        position: absolute;
+        left: 17px;
+        top: 15px;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--blue-solid);
+        color: #fff;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      ol.steps li strong {
+        color: var(--ink);
+      }
+      ol.steps li .cmd {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        margin-top: 6px;
+        color: var(--blue);
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      ul.tight {
+        margin: 14px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 7px;
+      }
+      ul.tight li {
+        position: relative;
+        padding-left: 18px;
+        color: var(--ink-soft);
+        font-size: 14.5px;
+      }
+      ul.tight li::before {
+        content: '·';
+        position: absolute;
+        left: 3px;
+        color: var(--blue);
+        font-weight: 700;
+      }
+      ul.tight strong {
+        color: var(--ink);
+      }
+
+      footer {
+        margin-top: 74px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+        font-size: 13px;
+        color: var(--ink-faint);
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      footer code {
+        background: none;
+        color: var(--ink-faint);
+      }
+      footer a {
+        color: var(--ink-soft);
+      }
+
+      /* scroll reveal */
+      .r {
+        opacity: 0;
+        transform: translateY(14px);
+        transition:
+          opacity 0.6s ease,
+          transform 0.6s ease;
+      }
+      .r.in {
+        opacity: 1;
+        transform: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .r {
+          opacity: 1;
+          transform: none;
+          transition: none;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .wrap {
+          padding: 0 16px 70px;
+        }
+        ol.steps li {
+          padding-left: 52px;
+        }
+      }
+
+      /* harnesses page: host colours + generated pill */
+      .h-claude {
+        color: var(--signal);
+      }
+      .h-opencode {
+        color: var(--agent);
+      }
+      .h-codex {
+        color: var(--blue);
+      }
+      .h-pi {
+        color: var(--good);
+      }
+      table.plain td.h-claude,
+      table.plain td.h-opencode,
+      table.plain td.h-codex,
+      table.plain td.h-pi {
+        color: inherit;
+      }
+      table.plain td.h-claude {
+        color: var(--signal);
+      }
+      table.plain td.h-opencode {
+        color: var(--agent);
+      }
+      table.plain td.h-codex {
+        color: var(--blue);
+      }
+      table.plain td.h-pi {
+        color: var(--good);
+      }
+      .tag.h-claude,
+      .tag.h-opencode,
+      .tag.h-codex,
+      .tag.h-pi {
+        font-weight: 600;
+      }
+      .pill {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border-radius: 999px;
+        padding: 1px 8px;
+        white-space: nowrap;
+      }
+      .pill.gen {
+        color: var(--agent);
+        background: var(--agent-wash);
+        border: 1px solid var(--agent);
+      }
+      h3.sub-h {
+        font-family: var(--font-display);
+        font-size: clamp(18px, 2.2vw, 22px);
+        font-weight: 600;
+        margin: 34px 0 10px;
+      }
+      table.plain {
+        min-width: 560px;
+      }
+      .sub code,
+      .card code,
+      .callout code,
+      ol.steps code,
+      ul.tight code {
+        overflow-wrap: anywhere;
+      }
+      .card .n.h-claude {
+        color: var(--signal);
+      }
+      .card .n.h-opencode {
+        color: var(--agent);
+      }
+      .card .n.h-codex {
+        color: var(--blue);
+      }
+      .card .n.h-pi {
+        color: var(--good);
+      }
+      @media (max-width: 760px) {
+        .topbar .brand {
+          font-size: 0.7rem;
+        }
+        .meta .tag {
+          overflow-wrap: anywhere;
+        }
+        .callout {
+          flex-direction: column;
+          gap: 6px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <a class="brand" href="./index.html"
+        ><span class="mark"></span> <b>Planos</b> · agentic-dev-boilerplate</a
+      >
+      <nav class="topnav">
+        <a href="#superficies">Superficies</a>
+        <a href="#generado">Generado</a>
+        <a href="#skills">Skills</a>
+        <a href="#hook">Hook</a>
+        <a href="#trailers">Trailers</a>
+        <a href="#mcp">MCP</a>
+        <a href="#credenciales">Credenciales</a>
+        <a href="#verificar">Verificar</a>
+      </nav>
+      <button class="themebtn" id="themebtn" aria-label="Cambiar tema">
+        <span id="themeicon">◐</span> tema
+      </button>
+    </div>
+
+    <div class="wrap">
+      <header class="hero">
+        <p class="kick">Multi-harness · cómo se comporta el repo</p>
+        <h1>Una fuente, <em>todos los harnesses</em> que la leen</h1>
+        <p class="lede">
+          El repo corre en Claude Code, OpenCode, Codex (CLI y Desktop) y Pi. Cada instrucción y
+          cada skill existe una sola vez. Donde los harnesses difieren de verdad (formato de MCP,
+          API de hooks) cada uno tiene un adaptador fino, versionado o generado, y un check lo
+          compara contra la fuente.
+        </p>
+        <div class="meta">
+          <span class="tag h-claude">Claude Code</span>
+          <span class="tag h-opencode">OpenCode</span>
+          <span class="tag h-codex">Codex CLI + Desktop</span>
+          <span class="tag h-pi">Pi</span>
+          <span class="tag"
+            >fuente de verdad: <code>.agents/instructions/agent-harnesses.md</code> §5.5</span
+          >
+        </div>
+      </header>
+
+      <section id="superficies" class="r">
+        <h2><span class="num">01</span>Qué lee cada harness</h2>
+        <p class="sub">
+          OpenCode, Codex y Pi leen <code>AGENTS.md</code> y <code>.agents/skills/</code> de forma
+          nativa (Pi solo en una carpeta de confianza), así que ahí no hay adaptador. Las secciones
+          de <code>.agents/instructions/</code> no las carga ningún host por su cuenta: el router de
+          <code>AGENTS.md</code> dice cuándo leer cada una, igual en todos. Claude Code necesita dos
+          superficies generadas para llegar al mismo contenido. El hook y el MCP tienen un archivo
+          por host porque cada uno habla un formato distinto.
+        </p>
+        <div class="tbl-scroll">
+          <table class="plain">
+            <thead>
+              <tr>
+                <th>Superficie</th>
+                <th class="h-claude">Claude Code</th>
+                <th class="h-opencode">OpenCode</th>
+                <th class="h-codex">Codex CLI + Desktop</th>
+                <th class="h-pi">Pi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Instrucciones</td>
+                <td>
+                  <code>CLAUDE.md</code> → <code>@AGENTS.md</code>
+                  <span class="pill gen">generado</span>
+                </td>
+                <td><code>AGENTS.md</code> nativo</td>
+                <td><code>AGENTS.md</code> nativo</td>
+                <td><code>AGENTS.md</code> nativo</td>
+              </tr>
+              <tr>
+                <td>Secciones de instrucciones</td>
+                <td><code>.agents/instructions/</code> a pedido, por el router de L0</td>
+                <td><code>.agents/instructions/</code> a pedido</td>
+                <td><code>.agents/instructions/</code> a pedido</td>
+                <td><code>.agents/instructions/</code> a pedido</td>
+              </tr>
+              <tr>
+                <td>Skills</td>
+                <td><code>.claude/skills</code> alias <span class="pill gen">generado</span></td>
+                <td><code>.agents/skills/</code> nativo</td>
+                <td><code>.agents/skills/</code> nativo</td>
+                <td><code>.agents/skills/</code> nativo (pide <code>/trust</code>)</td>
+              </tr>
+              <tr>
+                <td>Comandos</td>
+                <td>ninguno: <code>/&lt;skill&gt; &lt;modo&gt;</code></td>
+                <td>ninguno: skill y modo en prosa</td>
+                <td>ninguno: skill y modo en prosa</td>
+                <td>ninguno: <code>/skill:&lt;skill&gt; &lt;modo&gt;</code></td>
+              </tr>
+              <tr>
+                <td>Hook</td>
+                <td><code>.claude/settings.json</code> → <code>UserPromptSubmit</code></td>
+                <td><code>.opencode/plugins/personality-reinject.js</code></td>
+                <td><code>.codex/hooks.json</code> → <code>UserPromptSubmit</code></td>
+                <td><code>.pi/extensions/agentic-dev.js</code></td>
+              </tr>
+              <tr>
+                <td>MCP</td>
+                <td><code>.mcp.json</code></td>
+                <td><code>opencode.jsonc</code></td>
+                <td><code>.codex/config.toml</code></td>
+                <td><code>.pi/mcp.json</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <span class="ic">Capas</span>
+          <span
+            ><strong><code>AGENTS.md</code> es el núcleo que carga siempre</strong>: la frase que
+            ata de cada regla crítica, la capa comportamental, el núcleo de orquestación y un router
+            fijo. El resto vive en una sección por tema, que el agente lee cuando el router o una
+            línea <code>ROUTE:</code> del hook la nombra. Para Claude Code, el router además importa
+            <code>package.json</code> y <code>.agents/project.yaml</code>; OpenCode y Codex no
+            expanden imports y siguen la instrucción reforzada de la misma fila. Cómo funciona, en
+            detalle:
+            <a href="./decks/progressive-disclosure/how-it-works.es.html"
+              >Las instrucciones, en capas</a
+            >.</span
+          >
+        </div>
+        <div class="callout">
+          <span class="ic">Uno alcanza</span>
+          <span
+            ><strong>Un solo harness alcanza.</strong> La lista <code>harnesses:</code> de
+            <code>.agents/project.yaml</code> dice cuáles usa el proyecto, y cada gate
+            (<code>agents:compat:check</code>, <code>setup:doctor</code>, el instalador,
+            <code>bun sync</code>) revisa solo esos. Sin la lista, o en <code>null</code>, se
+            detectan por los archivos presentes; una lista explícita manda. El boilerplate mismo
+            revisa siempre todos. Decisión:
+            <code>.context/ADR/ADR-0013-declared-harnesses.md</code>.</span
+          >
+        </div>
+      </section>
+
+      <section id="generado" class="r">
+        <h2><span class="num">02</span>Lo generado no se edita a mano</h2>
+        <p class="sub">
+          Se edita la fuente y se regenera la salida con <code>bun run agents:compat</code>. Es la
+          Critical Rule #15: escribir prosa operativa en <code>CLAUDE.md</code> o tocar el alias es
+          drift estructural, y el check lo marca.
+        </p>
+        <div class="flow">
+          <div class="step">
+            <span class="n">Fuente · commiteada</span>
+            <h4>Lo que se edita</h4>
+            <p>
+              <code>AGENTS.md</code>, <code>.agents/instructions/</code>,
+              <code>.agents/skills/</code>, <code>.agents/hooks/</code>
+            </p>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step agt">
+            <span class="n">Comando</span>
+            <h4>Regenerar</h4>
+            <p><code>bun run agents:compat</code></p>
+          </div>
+          <div class="arrow">→</div>
+          <div class="step">
+            <span class="n">Salida</span>
+            <h4>Lo que se lee</h4>
+            <p>
+              <code>CLAUDE.md</code>: shim de una línea, commiteado. <code>.claude/skills</code>:
+              symlink POSIX o junction de Windows, ignorado por git.
+            </p>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="ic">Por qué</span>
+          <span
+            ><strong><code>CLAUDE.md</code> es un import documentado y no un symlink</strong> porque
+            un archivo de una línea (<code>@AGENTS.md</code> más un salto de línea) sobrevive a un
+            checkout en Windows. Nunca lleva prosa propia: todo lo que diga va en
+            <code>AGENTS.md</code> o en su sección de <code>.agents/instructions/</code>.</span
+          >
+        </div>
+      </section>
+
+      <section id="skills" class="r">
+        <h2><span class="num">03</span>Una skill se invoca por nombre y modo</h2>
+        <p class="sub">
+          No hay archivos de comando ni capa de alias: el boilerplate no trae
+          <code>.claude/commands/</code> ni <code>.opencode/commands/</code>. La skill es la única
+          forma de invocación en todos los hosts, y una skill con varios modos los lista en su
+          propia sección <code>## Mode routing</code>.
+        </p>
+        <div class="tbl-scroll">
+          <table class="plain">
+            <thead>
+              <tr>
+                <th>Host</th>
+                <th>Cómo se pide</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="h-claude">Claude Code</td>
+                <td>
+                  <code>/project-context data</code>, el slash de la skill a través de
+                  <code>.claude/skills</code>
+                </td>
+              </tr>
+              <tr>
+                <td class="h-opencode">OpenCode</td>
+                <td>"cargá <code>project-context</code>, modo <code>data</code>"</td>
+              </tr>
+              <tr>
+                <td class="h-codex">Codex</td>
+                <td>"cargá <code>project-context</code>, modo <code>data</code>"</td>
+              </tr>
+              <tr>
+                <td class="h-pi">Pi</td>
+                <td><code>/skill:project-context data</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sub" style="margin-top: 18px">
+          El primer token de los argumentos que coincide con un modo es el modo, y el resto se
+          reenvía. Si ninguno coincide, la skill lo deduce de la frase o pregunta.
+        </p>
+        <div class="callout warn">
+          <span class="ic">Rechazo</span>
+          <span
+            >Un proyecto puede tener sus propios comandos, pero
+            <strong>no uno que se llame igual que una skill</strong>: Claude Code registraría los
+            dos con el mismo slash y ganaría el cuerpo del comando.
+            <code>bun run agents:compat:check</code> falla con ese caso y
+            <code>bun run agents:compat</code> mueve el archivo a
+            <code>.backups/shadowing-commands/</code>, recuperable y nunca borrado. La decisión está
+            en <code>.context/ADR/ADR-0006-skill-plus-mode-invocation.md</code>.</span
+          >
+        </div>
+      </section>
+
+      <section id="hook" class="r">
+        <h2><span class="num">04</span>Un emisor, un adaptador por harness</h2>
+        <p class="sub">
+          <code>.agents/hooks/personality-reinject.mjs</code> tiene el texto que se reinyecta en
+          cada prompt. Existe en ese archivo y en ningún otro; cada host llega a él por un
+          adaptador. Emite, en este orden:
+        </p>
+        <ol class="steps">
+          <li>
+            <strong>El OUTPUT CONTRACT</strong> de <code>AGENTS.md</code> §2, para que la voz no se
+            diluya a medida que se llena la ventana de contexto.
+          </li>
+          <li>
+            <strong>La línea <code>AGENT IDENTITY:</code></strong> con el worktree, la etiqueta de
+            sesión y el harness. Es metadato forense: de ahí salen los trailers de cada commit.
+          </li>
+          <li>
+            <strong>La línea <code>ORCA:</code></strong
+            >, solo cuando el binario <code>orca</code>
+            es alcanzable. Una máquina sin Orca nunca oye hablar de él.
+          </li>
+          <li>
+            <strong>Como mucho un aviso de setup</strong>: falta <code>.env</code> en el checkout, o
+            es un worktree enlazado que nunca corrió <code>bun run worktree:provision</code>.
+          </li>
+          <li>
+            <strong>Las líneas <code>ROUTE: read &lt;archivo&gt;</code></strong
+            >: las secciones de instrucciones que el prompt necesita y la sesión todavía no leyó,
+            clasificadas con el router de <code>AGENTS.md</code> y los <code>triggers:</code> de
+            cada sección. Un <code>SessionStart</code> con <code>compact</code> o
+            <code>clear</code> las re-arma en Claude Code y Codex; Pi las re-arma con
+            <code>session_compact</code>; OpenCode 1 rutea desde <code>chat.message</code> y
+            OpenCode 2 se queda con el router.
+          </li>
+        </ol>
+        <pre
+          class="block"
+        ><span class="k">AGENT IDENTITY:</span> worktree=&lt;nombre|primary&gt; session=&lt;etiqueta&gt; harness=&lt;claude-code|codex|opencode|pi&gt;</pre>
+        <div class="cards">
+          <div class="card">
+            <span class="n h-claude">Claude Code</span>
+            <h4><code>.claude/settings.json</code></h4>
+            <p>
+              <code>UserPromptSubmit</code> corre
+              <code>node "$CLAUDE_PROJECT_DIR/.agents/hooks/personality-reinject.mjs"</code> con un
+              timeout corto. Es el único host que además acepta un título de sesión propuesto por el
+              hook.
+            </p>
+          </div>
+          <div class="card">
+            <span class="n h-opencode">OpenCode</span>
+            <h4><code>.opencode/plugins/personality-reinject.js</code></h4>
+            <p>
+              Un plugin fino importa <code>agentContextLines</code> y empuja las mismas líneas al
+              system prompt, en el lugar y sin duplicar. Un solo export por defecto
+              <code>{ id, setup, server }</code> carga en las dos generaciones de plugins de
+              OpenCode.
+            </p>
+            <p>
+              OpenCode no le pasa un nombre de sesión al plugin, solo el id, así que la etiqueta
+              queda como el id crudo.
+            </p>
+          </div>
+          <div class="card">
+            <span class="n h-codex">Codex</span>
+            <h4><code>.codex/hooks.json</code></h4>
+            <p>
+              <code>UserPromptSubmit</code> resuelve la raíz con
+              <code>git rev-parse --show-toplevel</code> y corre el mismo emisor, con una variante
+              <code>commandWindows</code> en PowerShell.
+            </p>
+            <p>Solo carga en un repositorio que Codex marcó como confiable.</p>
+          </div>
+          <div class="card">
+            <span class="n h-pi">Pi</span>
+            <h4><code>.pi/extensions/agentic-dev.js</code></h4>
+            <p>
+              Una extensión engancha el mismo emisor: la línea de identidad, las líneas
+              <code>ROUTE:</code>, el <code>ROUTE-PENDING</code> que sale de
+              <code>tool_result</code>, el re-armado en <code>session_compact</code> y el nombre de
+              sesión.
+            </p>
+            <p>
+              Solo carga en una carpeta que Pi marcó como confiable (<code>/trust</code>). Su
+              bloqueo de secretos es un cinturón de seguridad, no un límite (ver la sección 08).
+            </p>
+          </div>
+        </div>
+        <p>
+          Hay un segundo hook, separado de este: <code>.agents/hooks/doc-contracts.mjs</code>.
+          Claude Code y Codex lo corren después de cada edición de archivo
+          (<code>PostToolUse</code>). Cuando la edición cae dentro de una región marcada con
+          <code>LINT.IfChange</code>, agrega una línea <code>DOCS:</code> con las páginas que
+          describen ese código, una vez por sesión. El que bloquea es el gate de pre-push y de CI;
+          el hook solo adelanta el aviso al momento de editar. OpenCode no lo registra. Vale solo en
+          el repo del boilerplate (ADR-0017).
+        </p>
+      </section>
+
+      <section id="trailers" class="r">
+        <h2><span class="num">05</span>Los trailers de commit son forenses, no atribución</h2>
+        <p class="sub">
+          Todo commit que escribe una sesión de agente termina con dos líneas copiadas de la línea
+          <code>AGENT IDENTITY:</code>, en cualquier host. Dicen qué checkout y qué sesión
+          produjeron el cambio, para encontrar la transcripción correcta en un bisect o en un
+          post-mortem. No nombran ninguna herramienta.
+        </p>
+        <pre
+          class="block"
+        ><span class="c">docs: rewrite the harnesses page as a behaviour page</span>
+
+<span class="k">Worktree:</span> &lt;nombre|primary&gt;
+<span class="k">Session:</span> &lt;etiqueta&gt;</pre>
+        <div class="cards">
+          <div class="card">
+            <span class="n">Obligatorio</span>
+            <p>
+              <code>Worktree:</code> y después <code>Session:</code>, al final y sin nada debajo. Si
+              un valor no se pudo resolver se escribe <code>unknown</code>, nunca se adivina ni se
+              omite la clave.
+            </p>
+          </div>
+          <div class="card sig">
+            <span class="n">Prohibido</span>
+            <p>
+              <code>Claude-Session:</code> o cualquier trailer con marca de un harness, un
+              <code>Co-Authored-By:</code> de una IA y cualquier línea "Generated with". En Claude
+              Code, <code>.claude/settings.json</code> deja <code>attribution</code> en blanco y
+              <code>includeCoAuthoredBy</code> en <code>false</code>.
+            </p>
+          </div>
+          <div class="card agt">
+            <span class="n">Cómo se controla</span>
+            <p>
+              <code>.husky/commit-msg</code> llama a <code>.husky/framework-gates.sh</code>, que
+              corre <code>scripts/check-commit-trailers.ts</code>. Avisa y nunca bloquea: un commit
+              humano, un merge o un arreglo de emergencia siempre pasan.
+            </p>
+          </div>
+        </div>
+        <p class="sub" style="margin-top: 18px">
+          La regla es la Critical Rule #3 de <code>AGENTS.md</code>; la decisión está en
+          <code>.context/ADR/ADR-0004-harness-agnostic-commit-trailers.md</code>.
+        </p>
+      </section>
+
+      <section id="mcp" class="r">
+        <h2><span class="num">06</span>MCP: un conjunto declarado, un formato por host</h2>
+        <p class="sub">
+          El conjunto canónico de servidores es el que declara <code>.mcp.json</code> (sin Claude,
+          el archivo del primer harness declarado). Cada uno tiene que existir también en la
+          configuración de los otros harnesses en uso (<code>opencode.jsonc</code>,
+          <code>.codex/config.toml</code>, <code>.pi/mcp.json</code>), con las mismas dependencias
+          de <code>.env</code> y los mismos valores literales. Todos los archivos declaran solo
+          servidores locales.
+        </p>
+        <div class="tbl-scroll">
+          <table class="plain">
+            <thead>
+              <tr>
+                <th>Host</th>
+                <th>Archivo</th>
+                <th>Cómo referencia una credencial</th>
+                <th>Si la credencial falta</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="h-claude">Claude Code</td>
+                <td><code>.mcp.json</code></td>
+                <td>el cargador de <code>.env</code>, con <code>--filter</code> = sus variables</td>
+                <td>
+                  el servidor recibe la variable vacía o sin definir y muere en su primera llamada
+                  autenticada
+                </td>
+              </tr>
+              <tr>
+                <td class="h-opencode">OpenCode</td>
+                <td><code>opencode.jsonc</code></td>
+                <td>el mismo cargador, el mismo filtro</td>
+                <td>igual: falla en la primera llamada autenticada</td>
+              </tr>
+              <tr>
+                <td class="h-codex">Codex</td>
+                <td><code>.codex/config.toml</code></td>
+                <td>el mismo cargador, el mismo filtro, más <code>startup_timeout_sec</code></td>
+                <td>
+                  igual en un servidor stdio; solo un servidor remoto sin su
+                  <code>bearer_token_env_var</code> es error duro que nombra el servidor
+                </td>
+              </tr>
+              <tr>
+                <td class="h-pi">Pi</td>
+                <td><code>.pi/mcp.json</code></td>
+                <td>
+                  el mismo cargador, el mismo filtro; la forma <code>mcpServers</code> de Claude más
+                  <code>"exposure": "deferred"</code> y un <code>description</code> por servidor
+                </td>
+                <td>igual: falla en la primera llamada autenticada</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warn">
+          <span class="ic">Falla silenciosa</span>
+          <span
+            >En ningún host una credencial vacía avisa al arrancar.
+            <strong>Un 401, un 403 o una tool que falla sin explicación es la señal</strong>: parar,
+            nombrar la variable, corregir <code>.env</code> y reiniciar la sesión (Critical Rule
+            #9). El entorno se lee cuando el harness lanza los servidores y no se refresca a mitad
+            de sesión.</span
+          >
+        </div>
+        <h3 class="sub-h">La paridad se compara por significado, no por texto</h3>
+        <p class="sub">
+          <code>bun run agents:compat:check</code> normaliza JSON, JSONC y TOML a una forma común
+          (transporte, comando, argumentos, URL, variables de entorno, habilitado) y compara eso; un
+          servidor detrás del cargador se lee como su propio comando, con su
+          <code>--filter</code> como dependencias de <code>.env</code>. Un servidor presente en un
+          solo host falla nombrando el servidor y el host. Los servidores que trae el boilerplate
+          (<code>KNOWN_MCP_IDS</code> en <code>cli/lib/agent-compatibility-contracts.ts</code>)
+          pasan además un chequeo de forma estricto por host; cualquier otro, solo el genérico. Un
+          proyecto puede sacar o agregar servidores sin pelear con el check.
+        </p>
+        <div class="callout agt">
+          <span class="ic">Búsqueda web</span>
+          <span
+            >La búsqueda web no está en ningún archivo MCP del proyecto. Vive a nivel de harness, en
+            la config de usuario de cada máquina: Exa primero, Tavily segundo. Las skills declaran
+            una <strong>capacidad</strong> (<code>library-docs</code>, <code>web-search</code>,
+            <code>db</code>…) y el agente la resuelve por el sufijo del nombre de la tool, sea cual
+            sea el prefijo del servidor. Si ninguna tool la provee, el agente para y dice qué
+            capacidad falta y cómo habilitarla. Detalle en
+            <code>.agents/skills/agentic-dev-core/references/mcp-capabilities.md</code> y
+            <code>.context/ADR/ADR-0005-harness-level-mcps-and-capabilities.md</code>.</span
+          >
+        </div>
+      </section>
+
+      <section id="credenciales" class="r">
+        <h2><span class="num">07</span>Cómo llegan las credenciales a cada arranque</h2>
+        <p class="sub">
+          Un harness lanza sus servidores MCP antes de que corra cualquier hook, así que las
+          credenciales tienen que estar disponibles en el momento del arranque. Las lee cada
+          servidor por su cuenta, con el mismo cargador en todos los hosts, se haya abierto la
+          sesión como sea.
+        </p>
+        <div class="cards">
+          <div class="card">
+            <span class="n">Cada servidor MCP</span>
+            <h4>El cargador de <code>.env</code></h4>
+            <p>
+              Cada servidor stdio que necesita valores arranca con
+              <code
+                >bunx -p varlock@&lt;pin&gt; varlock run --no-redact-stdout --inject vars --filter
+                &lt;sus variables&gt; -- &lt;comando real&gt;</code
+              >. Lee <code>.env</code> (o el gestor de secretos que nombra el schema) al arrancar y
+              le pasa al servidor solo las variables de su filtro.
+            </p>
+          </div>
+          <div class="card agt">
+            <span class="n">Sin línea de comando</span>
+            <h4>No hace falta nada</h4>
+            <p>
+              La app de escritorio o un worker supervisado lanzado de forma nativa no tienen comando
+              que envolver ni entorno de proceso, y el cargador lee <code>.env</code> igual. No se
+              copia ningún valor a otro archivo.
+            </p>
+          </div>
+          <div class="card">
+            <span class="n">Desde la terminal</span>
+            <h4>
+              <code>claude</code> · <code>opencode</code> · <code>codex</code> · <code>pi</code>
+            </h4>
+            <p>
+              El binario pelado, sin script envoltorio: nada carga <code>.env</code> en el proceso
+              del agente, así que ningún secreto llega al shell de la IA. Un comando que necesita un
+              valor lo corre por el cargador en un subproceso,
+              <code>bunx varlock run -- sh -c '&lt;comando&gt;'</code>. Si un servidor se comporta
+              como si <code>.env</code> no existiera, <code>bun run vars:env:check</code> nombra la
+              variable que el shell exporta con otro valor (bajo varlock gana el heredado).
+            </p>
+          </div>
+        </div>
+
+        <h3 class="sub-h">Qué retira <code>bun run harness:env</code></h3>
+        <div class="tbl-scroll">
+          <table class="plain">
+            <thead>
+              <tr>
+                <th>Copia vieja</th>
+                <th>Qué hace</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>igual a <code>.env</code></td>
+                <td>la borra: <code>.env</code> ya tiene el valor</td>
+              </tr>
+              <tr>
+                <td>
+                  distinta de <code>.env</code>, o una variable que <code>.env</code> no declara
+                </td>
+                <td>
+                  la mueve a <code>.auth/harness-env-backup/&lt;VAR&gt;</code> (modo
+                  <code>0600</code>) y la nombra: pasás el valor correcto a <code>.env</code> y
+                  después borrás ese directorio
+                </td>
+              </tr>
+              <tr>
+                <td>leída todavía por una config vieja</td>
+                <td>la deja hasta que esa config pase al cargador</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <span class="ic">Después de cada cambio en <code>.env</code></span>
+          <span
+            >Reiniciar la sesión. En OpenCode también su servicio de fondo (<code
+              >opencode service restart</code
+            >), porque cachea la config resuelta por directorio. Las copias en texto plano que
+            escribía una instalación vieja (el bloque <code>env</code> de
+            <code>.claude/settings.local.json</code>, <code>.auth/opencode/&lt;VAR&gt;</code>) ya no
+            las lee nadie; <code>bun run harness:env:check</code> sale con 1 mientras quede
+            una.</span
+          >
+        </div>
+      </section>
+
+      <section id="verificar" class="r">
+        <h2><span class="num">08</span>Cómo se verifica y qué no se puede verificar</h2>
+        <div class="tbl-scroll">
+          <table class="plain">
+            <thead>
+              <tr>
+                <th>Comando</th>
+                <th>Qué hace</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>bun run agents:compat</code></td>
+                <td>
+                  Regenera el shim y el alias y mueve aparte los comandos que tapan una skill.
+                  También lo corren <code>bun sync</code> y <code>bun setup</code>.
+                </td>
+              </tr>
+              <tr>
+                <td><code>bun run agents:compat:check</code></td>
+                <td>
+                  El gate del contrato: bytes del shim, destino del alias, ningún comando con nombre
+                  de skill, adaptadores de hook, paridad MCP y que
+                  <code>eslint.config.js</code> conecte cada bloque que exporta
+                  <code>eslint.config.base.js</code>. Es parte de <code>bun run repo:check</code>.
+                </td>
+              </tr>
+              <tr>
+                <td><code>bun run setup:doctor</code></td>
+                <td>
+                  Diagnóstico por superficie (instrucciones, alias, comandos, hooks, MCP, lint), la
+                  línea de estado del alias, las copias en texto plano de credenciales MCP que
+                  quedan, de dónde salen los secretos y la confianza de Codex y de Pi como aviso.
+                </td>
+              </tr>
+              <tr>
+                <td><code>bun setup</code></td>
+                <td>
+                  Detecta los harnesses y pregunta cuáles configurar, Pi incluido (<code
+                    >INSTALL_AGENTS=claude-code,opencode,codex,pi</code
+                  >
+                  para un run sin preguntas; sin esa variable, un run no interactivo declara un
+                  harness detectado solo si el repo tiene sus archivos), guarda la elección en
+                  <code>harnesses:</code> y ofrece borrar los archivos de los que quedaron afuera
+                  (por defecto los conserva). Retira las copias en texto plano de una instalación
+                  vieja y, después de escribir <code>.env</code>, avisa que hay que reiniciar la
+                  sesión.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="sub-h">Lo que conviene saber de cada host</h3>
+        <ul class="tight">
+          <li>
+            <strong>Confianza en Codex</strong>: la config y los hooks de <code>.codex/</code> solo
+            cargan en un repositorio confiable. Es estado de runtime y ningún archivo lo prueba, por
+            eso el doctor lo muestra como aviso.
+          </li>
+          <li>
+            <strong>Codex Desktop</strong> usa la misma config del repo que el CLI. No hay segunda
+            convención ni carpeta extra.
+          </li>
+          <li>
+            <strong>La API de hooks de OpenCode</strong> es experimental: hay que volver a
+            verificarla cuando OpenCode se actualiza. Claude Code y Codex usan APIs estables.
+          </li>
+          <li>
+            <strong>Confianza en Pi</strong>: la confianza del proyecto gobierna
+            <code>.agents/skills</code>, <code>.pi/mcp.json</code> y <code>.pi/extensions</code>.
+            Una carpeta sin confiar recibe <code>AGENTS.md</code> y nada más; se confía dentro de Pi
+            con <code>/trust</code> y <code>bun run setup:doctor</code> muestra el estado.
+          </li>
+          <li>
+            <strong>El bloqueo de secretos de Pi es un cinturón, no un límite</strong>: Pi no tiene
+            config de deny ni aprobaciones. El adaptador rechaza lecturas directas de
+            <code>.env*</code> (salvo <code>.env.example</code> y <code>*.schema</code>),
+            <code>.auth/**</code> y <code>.claude/settings.local.json</code>, los comandos
+            <code>printenv</code>, <code>env</code> solo y <code>varlock printenv|reveal</code>, y
+            quita de la salida de <code>grep</code> las líneas de archivos de secretos.
+            <code>cat .env</code> y otras variantes de shell pasan, y una sesión sin confianza no
+            tiene bloqueo. Lo que vincula es la Regla Crítica #1.
+          </li>
+          <li>
+            <strong>Pi y el estado de runtime</strong>: los paquetes de Pi escriben loops, tareas y
+            subagentes bajo <code>.pi/</code>. <code>.gitignore</code> ignora <code>.pi/*</code> y
+            deja pasar <code>mcp.json</code>, <code>settings.json</code>, <code>SYSTEM.md</code>,
+            <code>APPEND_SYSTEM.md</code>, <code>extensions/</code>, <code>skills/</code>,
+            <code>prompts/</code> y <code>themes/</code>. Registro de diseño:
+            <code>.context/ADR/ADR-0022-pi-as-a-declared-harness.md</code>.
+          </li>
+          <li>
+            <strong>Los plugins de harness siguen siendo de su harness</strong>: el plugin de Engram
+            (hooks de sesión) es de Claude Code; <code>engram setup &lt;agente&gt;</code> registra
+            el servidor MCP de Engram en los hosts que nombra (Pi no está: se conecta a mano, una
+            vez por máquina, con
+            <code>pi mcp add engram --exposure deferred -- engram mcp --tools=agent</code>), y las
+            reglas de memoria no hacen nada donde ese servidor falta.
+          </li>
+        </ul>
+      </section>
+
+      <footer>
+        <span><a href="./index.html">← volver a Planos</a></span>
+        <span
+          >Fuente de verdad: <code>.agents/instructions/agent-harnesses.md</code> §5.5 ·
+          <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/harnesses.es.html"
+            >versión QA</a
+          ></span
+        >
+        <span><code>packages/pages-home/harnesses.es.html</code></span>
+      </footer>
+    </div>
+
+    <script>
+      // theme toggle
+      (function () {
+        var root = document.documentElement;
+        var btn = document.getElementById('themebtn');
+        var icon = document.getElementById('themeicon');
+        function current() {
+          var t = root.getAttribute('data-theme');
+          if (t) return t;
+          return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
+        }
+        function setIcon() {
+          icon.textContent = current() === 'dark' ? '☾' : '☀';
+        }
+        setIcon();
+        btn.addEventListener('click', function () {
+          var next = current() === 'dark' ? 'light' : 'dark';
+          root.setAttribute('data-theme', next);
+          setIcon();
+        });
+        if (window.matchMedia) {
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', setIcon);
+        }
+      })();
+
+      // scroll reveal
+      (function () {
+        var reduce =
+          window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var els = document.querySelectorAll('.r');
+        if (reduce) {
+          els.forEach(function (el) {
+            el.classList.add('in');
+          });
+          return;
+        }
+        var io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (e.isIntersecting) {
+                e.target.classList.add('in');
+                io.unobserve(e.target);
+              }
+            });
+          },
+          { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+        );
+        els.forEach(function (el) {
+          io.observe(el);
+        });
+      })();
+    </script>
+  </body>
+</html>
